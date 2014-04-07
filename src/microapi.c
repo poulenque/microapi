@@ -311,24 +311,24 @@ Bool m_mat2_inverse(m_mat2 mat_in,m_mat2 mat_out){
 	mat_out[3] =  det_invert*mat_in[0];
 }
 Bool m_mat3_inverse(m_mat3 mat_in,m_mat3 mat_out){
-#define a__ mat_in[0]
-#define b__ mat_in[1]
-#define c__ mat_in[2]
-#define d__ mat_in[3]
-#define e__ mat_in[4]
-#define f__ mat_in[5]
-#define g__ mat_in[6]
-#define h__ mat_in[7]
-#define i__ mat_in[8]
-#define A= e__*i__ - f__*h__;
-#define B= f__*g__ - d__*i__;
-#define C= d__*h__ - e__-g__;
-#define D= c__*h__ - b__*i__;
-#define E= a__*i__ - c__*g__;
-#define F= b__*g__ - a__*h__;
-#define G= b__*f__ - c__*e__;
-#define H= c__*d__ - a__*f__;
-#define I= a__*e__ - b__*d__;
+#define A_ mat_in[0]
+#define B_ mat_in[1]
+#define C_ mat_in[2]
+#define D_ mat_in[3]
+#define E_ mat_in[4]
+#define F_ mat_in[5]
+#define G_ mat_in[6]
+#define H_ mat_in[7]
+#define I_ mat_in[8]
+#define A= E_*I_ - F_*H_;
+#define B= F_*G_ - D_*I_;
+#define C= D_*H_ - E_-G_;
+#define D= C_*H_ - B_*I_;
+#define E= A_*I_ - C_*G_;
+#define F= B_*G_ - A_*H_;
+#define G= B_*F_ - C_*E_;
+#define H= C_*D_ - A_*F_;
+#define I= A_*E_ - B_*D_;
 	float det_invert =
 		 mat_in[0]*(mat_in[4]*mat_in[8]-mat_in[5]*mat_in[7])
 		-mat_in[1]*(mat_in[8]*mat_in[3]-mat_in[5]*mat_in[6])
@@ -347,15 +347,15 @@ Bool m_mat3_inverse(m_mat3 mat_in,m_mat3 mat_out){
 	mat_out[6] = C;
 	mat_out[7] = F;
 	mat_out[8] = I;
-#undef a__
-#undef b__
-#undef c__
-#undef d__
-#undef e__
-#undef f__
-#undef g__
-#undef h__
-#undef i__
+#undef A_
+#undef B_
+#undef C_
+#undef D_
+#undef E_
+#undef F_
+#undef G_
+#undef H_
+#undef I_
 #undef A
 #undef B
 #undef C
@@ -367,87 +367,73 @@ Bool m_mat3_inverse(m_mat3 mat_in,m_mat3 mat_out){
 #undef I
 }
 Bool m_mat4_inverse(m_mat4 mat_in,m_mat4 mat_out){
-#define a__ mat_in[0]
-#define b__ mat_in[1]
-#define c__ mat_in[2]
-#define d__ mat_in[3]
-#define e__ mat_in[4]
-#define f__ mat_in[5]
-#define g__ mat_in[6]
-#define h__ mat_in[7]
-#define i__ mat_in[8]
-#define j__ mat_in[9]
-#define k__ mat_in[10]
-#define l__ mat_in[11]
-#define m__ mat_in[12]
-#define n__ mat_in[13]
-#define o__ mat_in[14]
-#define p__ mat_in[15]
-	float det_invert=9000000000000;
+#define A mat_in[0]
+#define B mat_in[1]
+#define C mat_in[2]
+#define D mat_in[3]
+#define E mat_in[4]
+#define F mat_in[5]
+#define G mat_in[6]
+#define H mat_in[7]
+#define I mat_in[8]
+#define J mat_in[9]
+#define K mat_in[10]
+#define L mat_in[11]
+#define M mat_in[12]
+#define N mat_in[13]
+#define O mat_in[14]
+#define P mat_in[15]
 
-	mat_out[0] = det_invert*;
-	mat_out[1] = det_invert*;
-	mat_out[2] = det_invert*;
-	mat_out[3] = det_invert*;
 
-	mat_out[4] = det_invert*;
-	mat_out[5] = det_invert*;
-	mat_out[6] = det_invert*;
-	mat_out[7] = det_invert*;
+	float det_invert =
+	  A*( F*K*P - F*L*O - G*J*P + G*L*N + H*J*O - H*K*N)
+	+ B*(-E*K*P + E*L*O + G*I*P - G*L*M - H*I*O + H*K*M)
+	+ C*( E*J*P - E*L*N - F*I*P + F*L*M + H*I*N + H*J*M)
+	+ D*(-E*J*O + E*K*N + F*I*O - F*K*M - G*I*N + G*J*M);
+	det_invert=1./det_invert;
 
-	mat_out[8] = det_invert*;
-	mat_out[9] = det_invert*;
-	mat_out[10]= det_invert*;
-	mat_out[11]= det_invert*;
+	mat_out[0] = det_invert*( -H*K*N + G*L*N + H*J*O - F*L*O - G*J*P + F*K*P);
+	mat_out[1] = det_invert*(  D*K*N - C*L*N - D*J*O + B*L*O + C*J*P - B*K*P);
+	mat_out[2] = det_invert*( -D*G*M + C*H*N + D*F*O - B*H*O - C*F*P + B*G*P);
+	mat_out[3] = det_invert*(  D*G*J - C*H*J - D*F*K + B*H*K + C*F*L - B*G*L);
 
-	mat_out[12]= det_invert*;
-	mat_out[13]= det_invert*;
-	mat_out[14]= det_invert*;
-	mat_out[15]= det_invert*;
-#undef a__
-#undef b__
-#undef c__
-#undef d__
-#undef e__
-#undef f__
-#undef g__
-#undef h__
-#undef i__
-#undef j__
-#undef k__
-#undef l__
-#undef m__
-#undef n__
-#undef o__
-#undef p__
+	mat_out[4] = det_invert*(  H*K*M - G*L*M - H*I*O + E*L*O + G*I*P - E*K*P);
+	mat_out[5] = det_invert*( -D*K*M + C*L*M + D*I*O - A*L*O - C*I*P + A*K*P);
+	mat_out[6] = det_invert*(  D*G*M - C*H*M - D*E*O + A*H*O + C*E*P - A*G*P);
+	mat_out[7] = det_invert*( -D*G*I + C*H*I + D*E*K - A*H*K - C*E*L + A*G*L);
+
+	mat_out[8] = det_invert*( -H*J*M + F*L*M + H*I*N - E*L*N - F*I*P + E*J*P);
+	mat_out[9] = det_invert*(  D*J*M - B*L*M - D*I*N + A*L*N + B*I*P - A*J*P);
+	mat_out[10]= det_invert*( -D*F*M + B*H*M + D*E*N - A*H*N - B*E*P + A*F*P);
+	mat_out[11]= det_invert*(  D*F*I - B*H*I - D*E*J + A*H*J + B*E*L - A*F*L);
+
+	mat_out[12]= det_invert*(  G*J*M - F*K*M - G*I*N + E*K*N + F*I*O - E*J*O);
+	mat_out[13]= det_invert*( -C*J*M + B*K*M + C*I*N - A*K*N - B*I*O + A*J*O);
+	mat_out[14]= det_invert*(  C*F*M - B*G*M - C*E*N + A*G*N + B*E*O - A*F*O);
+	mat_out[15]= det_invert*( -C*F*I + B*G*I + C*E*J - A*G*J - B*E*K + A*F*K);
+#undef A
+#undef B
+#undef C
+#undef D
+#undef E
+#undef F
+#undef G
+#undef H
+#undef I
+#undef J
+#undef K
+#undef L
+#undef M
+#undef N
+#undef O
+#undef P
 }
 
-void m_matLookAt(m_mat4 mat,m_vec4 eye,m_vec4 center,m_vec4 up){
-
-}
-void m_matProjection(m_mat4 mat,float f,float near,float far){
-	mat[0] = 1;
-	mat[1] = 0;
-	mat[2] = 0;
-	mat[3] = 0;
-
-	mat[4] = 0;
-	mat[5] = windows[0]->aspect_ratio;
-	mat[6] = 0;
-	mat[7] = 0;
-
-	mat[8] = 0;
-	mat[9] = 0;
-	mat[10]= (far+near)/(near-far);
-	mat[11]= 2*far*near/(near-far);
-
-	mat[12]= 0;
-	mat[13]= 0;
-	mat[14]= -1/f;
-	mat[15]= 0;
-}
 
 //--TRANSLATE--TRANSLATE--TRANSLATE--TRANSLATE--TRANSLATE
+//--TRANSLATE--TRANSLATE--TRANSLATE--TRANSLATE--TRANSLATE
+//--TRANSLATE--TRANSLATE--TRANSLATE--TRANSLATE--TRANSLATE
+
 void m_mat2_translation(m_mat2 mat,m_vec1 v){
 	mat[0] = 0;
 	mat[1] = v[0];
@@ -489,6 +475,9 @@ void m_mat4_translation(m_mat4 mat,m_vec3 v){
 	mat[15]= 1;
 }
 //--ROTATE--ROTATE--ROTATE--ROTATE--ROTATE--ROTATE
+//--ROTATE--ROTATE--ROTATE--ROTATE--ROTATE--ROTATE
+//--ROTATE--ROTATE--ROTATE--ROTATE--ROTATE--ROTATE
+
 // void m_mat2_rotation(m_mat2 mat,m_vec1 v){
 // 	float theta = sqrt(v[0]*v[0]);
 // 	theta=theta>=0?1:-1;
@@ -523,26 +512,28 @@ void m_mat4_rotation(m_mat4 mat,m_vec3 v){
 	float y=v[1]*inv_theta;
 	float z=v[2]*inv_theta;
 
-	mat[0] = 0;
-	mat[1] = 0;
-	mat[2] = 0;
+	mat[0] = c         + x*x*(1-c);
+	mat[1] = x*y*(1-c) - z*s;
+	mat[2] = x*z*(1-c) + y*s;
 	mat[3] = 0;
 
-	mat[4] = 0;
-	mat[5] = 0;
-	mat[6] = 0;
+	mat[4] = y*x*(1-c) + z*s;
+	mat[5] = c         + y*y*(1-c);
+	mat[6] = y*z*(1-c) - x*s;
 	mat[7] = 0;
 
-	mat[8] = 0;
-	mat[9] = 0;
-	mat[10]= 0;
+	mat[8] = z*x*(1-c) - y*s;
+	mat[9] = z*y*(1-c) + x*s;
+	mat[10]= c         + z*z*(1-c);
 	mat[11]= 0;
 
 	mat[12]= 0;
 	mat[13]= 0;
 	mat[14]= 0;
-	mat[15]= 0;
+	mat[15]= 1;
 }
+//--SCALE--SCALE--SCALE--SCALE--SCALE--SCALE
+//--SCALE--SCALE--SCALE--SCALE--SCALE--SCALE
 //--SCALE--SCALE--SCALE--SCALE--SCALE--SCALE
 void m_mat2_scale(m_mat2 mat,m_vec1 v){
 	mat[0] = v[0];
@@ -583,4 +574,31 @@ void m_mat4_scale(m_mat4 mat,m_vec3 v){
 	mat[13]= 0;
 	mat[14]= 0;
 	mat[15]= 1;
+}
+//--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER
+//--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER
+//--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER
+void m_matLookAt(m_mat4 mat,m_vec4 eye,m_vec4 center,m_vec4 up){
+
+}
+void m_matProjection(m_mat4 mat,float f,float near,float far){
+	mat[0] = 1;
+	mat[1] = 0;
+	mat[2] = 0;
+	mat[3] = 0;
+
+	mat[4] = 0;
+	mat[5] = windows[0]->aspect_ratio;
+	mat[6] = 0;
+	mat[7] = 0;
+
+	mat[8] = 0;
+	mat[9] = 0;
+	mat[10]= (far+near)/(near-far);
+	mat[11]= 2*far*near/(near-far);
+
+	mat[12]= 0;
+	mat[13]= 0;
+	mat[14]= -1/f;
+	mat[15]= 0;
 }
