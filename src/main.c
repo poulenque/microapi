@@ -3,14 +3,16 @@
 #define FALSE 0
 #define TRUE 1
 
-bool gRenderQuad = TRUE;
+Bool gRenderQuad = TRUE;
 
-GLuint gProgramID = 0;
-GLint gVertexPos2DLocation = -1;
-GLuint gVBO = 0;
-GLuint gIBO = 0;
+static GLuint gProgramID = 0;
+static GLint gVertexPosLocation = -1;
+static GLuint gVBO = 0;
+static GLuint gIBO = 0;
+static GLuint projection_id=-1;
+static m_window* gWindow;
 
-bool initGL() {
+Bool initGL() {
 	GLuint vertexShader;
 	GLuint fragmentShader;
 	if(!m_loadShader(&vertexShader,GL_VERTEX_SHADER,"src/vshader.glsl"))return FALSE;
@@ -19,7 +21,12 @@ bool initGL() {
 	if(!m_generateGLProgram(&gProgramID,vertexShader,0,fragmentShader))return FALSE;
 	//==================================================
 	//==================================================
-	gVertexPos2DLocation = glGetAttribLocation( gProgramID, "position" );
+	m_mat4 projection_matrix;
+	m_matProjection(projection_matrix ,90. ,gWindow->aspect_ratio ,0.01 ,100.);
+	projection_id = glGetUniformLocation(gProgramID, "projection");
+    glUniformMatrix4fv(projection_id, 1, GL_FALSE, projection_matrix);
+
+	gVertexPosLocation = glGetAttribLocation( gProgramID, "position" );
 	glClearColor( 0.f, 0.f, 0.f, 1.f );
 	//VBO data
 	GLfloat vertexData[] = {
@@ -41,52 +48,56 @@ bool initGL() {
 	return TRUE;
 }
 
-void handleKeys( unsigned char key, int x, int y ) {
+void handleKeys( unsigned char key, int x, int y ,int leftButton,int rightButton, int middleButton, int scrollUp, int scrollDown) {
 	//Toggle quad
 	gRenderQuad = !gRenderQuad;
+	printf("%i,%i\n", x,y);
+	printf("%i,%i,%i,%i,%i\n", leftButton, rightButton, middleButton, scrollUp, scrollDown);
 	if( key == 'q' ) {
 		m_quitMainLoop();
 	}
 }
 
-void keystate_function(const Uint8* keystate,int x, int y){
+void keystate_function(const Uint8* keystate,int x, int y,int leftButton,int rightButton, int middleButton, int scrollUp, int scrollDown){
 	if(keystate[SDL_SCANCODE_A]){
+		printf("%i,%i\n", x,y);
+		printf("%i,%i,%i,%i,%i\n", leftButton, rightButton, middleButton, scrollUp, scrollDown);
 		printf("caca\n");
 	}
 }
 
-static m_window* gWindow;
 
-static float t =0;
-
+// static float t =0;
 void render() {
-	t+=0.1;
-	m_setPosition(gWindow,100+100*cos(t), 100+100*sin(t));
+	// t+=0.1;
+	// m_setPosition(gWindow,200+100*cos(t), 200+100*sin(t));
+	// m_setSize(gWindow,200+100*sin(t), 200+100*cos(t));
+
 
 	glClear( GL_COLOR_BUFFER_BIT );
 	if( gRenderQuad ) {
 		glUseProgram( gProgramID );
 
-		glEnableVertexAttribArray( gVertexPos2DLocation );
+		glEnableVertexAttribArray( gVertexPosLocation );
 
 		glBindBuffer( GL_ARRAY_BUFFER, gVBO );
-		glVertexAttribPointer( gVertexPos2DLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), NULL );
+		glVertexAttribPointer( gVertexPosLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), NULL );
 
 		glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, gIBO );
 		glDrawElements( GL_TRIANGLE_FAN, 4, GL_UNSIGNED_INT, NULL );
 
-		glDisableVertexAttribArray( gVertexPos2DLocation );
+		glDisableVertexAttribArray( gVertexPosLocation );
 
 		glUseProgram(0);
 	}
 }
 
 int main(int argc,char* args[]) {
-
 	// if(!m_init(3,1)) {return 1;}
 	if(!m_init(3,0)) {return 1;}
 
-	gWindow = m_newWindow(640,480,"hello",FALSE);
+	// gWindow = m_newWindow(640,480,"hello",FALSE);
+	gWindow = m_newWindow(640,480,"hello",TRUE);
 	
 	initGL();
 

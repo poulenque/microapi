@@ -46,6 +46,7 @@ ifdef COMPILE_LINUX
 	C_FLAGS += -lSDL2
 	LIBS += -pg -g
 	LIBS += -lm
+	LIBS += -msse2
 	# LIBS += -lvorbisfile
 	# LIBS += -lopenal
 	LIBS += -lSDL2
@@ -53,6 +54,7 @@ ifdef COMPILE_LINUX
 	# LIBS += -lglfw
 	LIBS += -lGL
 	# LIBS += -lGLU
+	MKDIR =mkdir -p build
 endif
 # LIBS += -lpthread
 SOURCES = $(wildcard src/*.c)
@@ -65,7 +67,7 @@ all:$(OBJECTS)
 	
 # To obtain object files
 build/%.o: src/%.c
-	mkdir -p build; $(CC) $(C_FLAGS) -c $< -o $@
+	$(MKDIR); $(CC) $(C_FLAGS) -c $< -o $@
 
 run:all
 	./$(PROG)

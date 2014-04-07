@@ -7,18 +7,14 @@
 
 //TODO
 //
+// window resizing
+//   wtf with the content ??
+//
 // implement multiple window
 // -> should glewInit be called once per new window ?
-// event handling
-// window resizing
-// m_close should delete glPrograms
-// resize event set aspect_ratio to the correct value
+// -> should m_close delete glPrograms ?
+//
 
-struct m_window{
-	SDL_Window* sdl_window;
-	SDL_GLContext context;
-	float aspect_ratio;
-};
 
 //list all windows
 static m_window** windows;
@@ -30,8 +26,8 @@ static void printShaderLog(GLuint shaderId);
 static void printProgramLog(GLuint programId);
 
 static void(*main_loop_function)(void);
-static void(*typing_function)(unsigned char key, int x, int y);
-static void(*keystate_function)(const Uint8* keystate,int x,int y);
+static void(*typing_function)(unsigned char key, int x, int y,int leftButton,int rightButton, int middleButton, int scrollUp, int scrollDown);
+static void(*keystate_function)(const Uint8* keystate,int x,int y,int leftButton,int rightButton, int middleButton, int scrollUp, int scrollDown);
 
 void m_setWindowTitle(m_window* window,const char* title){
 	SDL_SetWindowTitle(window->sdl_window,title);
@@ -40,16 +36,18 @@ void m_setPosition(m_window* window,int x, int y){
 	SDL_SetWindowPosition(window->sdl_window, x, y);
 }
 void m_setSize(m_window* window,int w, int h){
-	//TODO
+	SDL_SetWindowSize(window->sdl_window,w,h);
+	window->aspect_ratio=((float)w)/h;
+	glViewport(0,0,w,h);
 }
 
 void m_setMainLoopFunction(void(*f)(void)){
 	main_loop_function=f;
 }
-void m_setTypingFunction(void(*f)(unsigned char key, int x, int y)){
+void m_setTypingFunction(void(*f)(unsigned char key, int x, int y,int leftButton,int rightButton, int middleButton, int scrollUp, int scrollDown)){
 	typing_function=f;
 }
-void m_setKeyStateFunction(void(*f)(const Uint8* keystate,int x,int y)){
+void m_setKeyStateFunction(void(*f)(const Uint8* keystate,int x,int y,int leftButton,int rightButton, int middleButton, int scrollUp, int scrollDown)){
 	keystate_function = f;
 }
 
@@ -68,19 +66,39 @@ void m_MainLoop(){
 		while( SDL_PollEvent( &e ) != 0 ) {
 			if( e.type == SDL_QUIT ) {
 				quit = TRUE;
+			} else if( e.type == SDL_WINDOWEVENT){
+				if(e.window.event==SDL_WINDOWEVENT_RESIZED){
+					int w=e.window.data1;
+					int h=e.window.data2;
+					windows[0]->aspect_ratio=((float)w)/h;
+					// printf("Window %d resized to %dx%d\n",e.window.windowID, e.window.data1,e.window.data2);
+					//TODO
+					// is that deprecated ??
+					glViewport(0,0,w,h);
+				}
 			} else if( e.type == SDL_TEXTINPUT ) {
 				// if a function had been choosen
 				if(typing_function){
 					int x = 0, y = 0;
-					SDL_GetMouseState( &x, &y );
-					typing_function(e.text.text[0], x, y);
+					Uint8 mouseState = SDL_GetMouseState( &x, &y );
+					int leftButton = mouseState&SDL_BUTTON(1);
+					int rightButton= mouseState&SDL_BUTTON(3);
+					int middleButton=mouseState&SDL_BUTTON(2);
+					int scrollUp  =  mouseState&SDL_BUTTON(4);
+					int scrollDown = mouseState&SDL_BUTTON(5);
+					typing_function(e.text.text[0], x, y,leftButton,rightButton, middleButton, scrollUp, scrollDown);
 				}
 			}
 		}
 		if(keystate_function){
 			int x = 0, y = 0;
-			SDL_GetMouseState( &x, &y );
-			keystate_function(SDL_GetKeyboardState(NULL),x,y);
+			Uint8 mouseState = SDL_GetMouseState( &x, &y );
+			int leftButton = mouseState&SDL_BUTTON(1);
+			int rightButton= mouseState&SDL_BUTTON(3);
+			int middleButton=mouseState&SDL_BUTTON(2);
+			int scrollUp  =  mouseState&SDL_BUTTON(4);
+			int scrollDown = mouseState&SDL_BUTTON(5);
+			keystate_function(SDL_GetKeyboardState(NULL),x,y,leftButton,rightButton, middleButton, scrollUp, scrollDown);
 		}
 		main_loop_function();
 		// ==========
@@ -119,7 +137,6 @@ void m_close(){
 
 
 m_window* m_newWindow(int width,int height,const char* title,Bool resizable){
-	aspect_ratio=((float)width)/height;
 
 	if(window_count){
 		printf("=======================================================\n");
@@ -132,6 +149,7 @@ m_window* m_newWindow(int width,int height,const char* title,Bool resizable){
 	}
 
 	m_window* window = malloc(sizeof(m_window));
+	window->aspect_ratio=((float)width)/height;
 	if(title==NULL){title="";}
 	Uint32 flags=SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_BORDERLESS;
 	if(resizable){
@@ -154,9 +172,9 @@ m_window* m_newWindow(int width,int height,const char* title,Bool resizable){
 	}
 
 	// //Initialize GLEW
-	// glewExperimental = GL_TRUE;
-	// GLenum glewError = glewInit();
-	// if(glewError!=GLEW_OK){printf("Error initializing GLEW! %s\n",glewGetErrorString(glewError));}
+	glewExperimental = GL_TRUE;
+	GLenum glewError = glewInit();
+	if(glewError!=GLEW_OK){printf("Error initializing GLEW! %s\n",glewGetErrorString(glewError));}
 
 	//Use Vsync
 	if(SDL_GL_SetSwapInterval(1)<0){printf("Warning: Unable to set VSync! SDL Error: %s\n",SDL_GetError());}
@@ -300,73 +318,21 @@ static char* readFile(const char *path) {
 
 
 Bool m_mat1_inverse(m_mat1 mat_in,m_mat1 mat_out){
+	if(mat_in[0]==0)return FALSE;
 	mat_out[0]=1./mat_in[0];
+	return TRUE;
 }
 Bool m_mat2_inverse(m_mat2 mat_in,m_mat2 mat_out){
-	float det_invert=1./(mat_in[0]*mat_in[3]-mat_in[1]*mat_in[2]) 
+	float det_invert=(mat_in[0]*mat_in[3]-mat_in[1]*mat_in[2]);
+	if(det_invert==0)return FALSE;
+	det_invert=1./det_invert;
 	mat_out[0] =  det_invert*mat_in[3];
 	mat_out[1] = -det_invert*mat_in[1];
 	
 	mat_out[2] = -det_invert*mat_in[2];
 	mat_out[3] =  det_invert*mat_in[0];
+	return TRUE;
 }
-Bool m_mat3_inverse(m_mat3 mat_in,m_mat3 mat_out){
-#define A_ mat_in[0]
-#define B_ mat_in[1]
-#define C_ mat_in[2]
-#define D_ mat_in[3]
-#define E_ mat_in[4]
-#define F_ mat_in[5]
-#define G_ mat_in[6]
-#define H_ mat_in[7]
-#define I_ mat_in[8]
-#define A= E_*I_ - F_*H_;
-#define B= F_*G_ - D_*I_;
-#define C= D_*H_ - E_-G_;
-#define D= C_*H_ - B_*I_;
-#define E= A_*I_ - C_*G_;
-#define F= B_*G_ - A_*H_;
-#define G= B_*F_ - C_*E_;
-#define H= C_*D_ - A_*F_;
-#define I= A_*E_ - B_*D_;
-	float det_invert =
-		 mat_in[0]*(mat_in[4]*mat_in[8]-mat_in[5]*mat_in[7])
-		-mat_in[1]*(mat_in[8]*mat_in[3]-mat_in[5]*mat_in[6])
-		+mat_in[2]*(mat_in[3]*mat_in[7]-mat_in[4]*mat_in[6]);
-	det_invert=1./det_invert;
-
-
-	mat_out[0] = A;
-	mat_out[1] = D;
-	mat_out[2] = G;
-
-	mat_out[3] = B;
-	mat_out[4] = E;
-	mat_out[5] = H;
-	
-	mat_out[6] = C;
-	mat_out[7] = F;
-	mat_out[8] = I;
-#undef A_
-#undef B_
-#undef C_
-#undef D_
-#undef E_
-#undef F_
-#undef G_
-#undef H_
-#undef I_
-#undef A
-#undef B
-#undef C
-#undef D
-#undef E
-#undef F
-#undef G
-#undef H
-#undef I
-}
-Bool m_mat4_inverse(m_mat4 mat_in,m_mat4 mat_out){
 #define A mat_in[0]
 #define B mat_in[1]
 #define C mat_in[2]
@@ -383,13 +349,35 @@ Bool m_mat4_inverse(m_mat4 mat_in,m_mat4 mat_out){
 #define N mat_in[13]
 #define O mat_in[14]
 #define P mat_in[15]
+Bool m_mat3_inverse(m_mat3 mat_in,m_mat3 mat_out){
 
+	float det_invert =
+		 mat_in[0]*(mat_in[4]*mat_in[8]-mat_in[5]*mat_in[7])
+		-mat_in[1]*(mat_in[8]*mat_in[3]-mat_in[5]*mat_in[6])
+		+mat_in[2]*(mat_in[3]*mat_in[7]-mat_in[4]*mat_in[6]);
+	if(det_invert==0)return FALSE;
+	det_invert=1./det_invert;
 
+	mat_out[0] = E*I - F*H;
+	mat_out[1] = C*H - B*I;
+	mat_out[2] = B*F - C*E;
+
+	mat_out[3] = F*G - D*I;
+	mat_out[4] = A*I - C*G;
+	mat_out[5] = C*D - A*F;
+	
+	mat_out[6] = D*H - E-G;
+	mat_out[7] = B*G - A*H;
+	mat_out[8] = A*E - B*D;
+	return TRUE;
+}
+Bool m_mat4_inverse(m_mat4 mat_in,m_mat4 mat_out){
 	float det_invert =
 	  A*( F*K*P - F*L*O - G*J*P + G*L*N + H*J*O - H*K*N)
 	+ B*(-E*K*P + E*L*O + G*I*P - G*L*M - H*I*O + H*K*M)
 	+ C*( E*J*P - E*L*N - F*I*P + F*L*M + H*I*N + H*J*M)
 	+ D*(-E*J*O + E*K*N + F*I*O - F*K*M - G*I*N + G*J*M);
+	if(det_invert==0)return FALSE;
 	det_invert=1./det_invert;
 
 	mat_out[0] = det_invert*( -H*K*N + G*L*N + H*J*O - F*L*O - G*J*P + F*K*P);
@@ -411,6 +399,8 @@ Bool m_mat4_inverse(m_mat4 mat_in,m_mat4 mat_out){
 	mat_out[13]= det_invert*( -C*J*M + B*K*M + C*I*N - A*K*N - B*I*O + A*J*O);
 	mat_out[14]= det_invert*(  C*F*M - B*G*M - C*E*N + A*G*N + B*E*O - A*F*O);
 	mat_out[15]= det_invert*( -C*F*I + B*G*I + C*E*J - A*G*J - B*E*K + A*F*K);
+	return TRUE;
+}
 #undef A
 #undef B
 #undef C
@@ -427,13 +417,11 @@ Bool m_mat4_inverse(m_mat4 mat_in,m_mat4 mat_out){
 #undef N
 #undef O
 #undef P
-}
 
 
 //--TRANSLATE--TRANSLATE--TRANSLATE--TRANSLATE--TRANSLATE
 //--TRANSLATE--TRANSLATE--TRANSLATE--TRANSLATE--TRANSLATE
 //--TRANSLATE--TRANSLATE--TRANSLATE--TRANSLATE--TRANSLATE
-
 void m_mat2_translation(m_mat2 mat,m_vec1 v){
 	mat[0] = 0;
 	mat[1] = v[0];
@@ -477,15 +465,6 @@ void m_mat4_translation(m_mat4 mat,m_vec3 v){
 //--ROTATE--ROTATE--ROTATE--ROTATE--ROTATE--ROTATE
 //--ROTATE--ROTATE--ROTATE--ROTATE--ROTATE--ROTATE
 //--ROTATE--ROTATE--ROTATE--ROTATE--ROTATE--ROTATE
-
-// void m_mat2_rotation(m_mat2 mat,m_vec1 v){
-// 	float theta = sqrt(v[0]*v[0]);
-// 	theta=theta>=0?1:-1;
-// 	mat[0] = theta;
-// 	mat[1] = 0;
-// 	mat[2] = 1;
-// 	mat[3] = 0;
-// }
 void m_mat3_rotation(m_mat3 mat,float theta){
 	// float theta = sqrt(v[0]*v[0]+v[1]*v[1]);
 	float c=cos(theta);
@@ -575,30 +554,81 @@ void m_mat4_scale(m_mat4 mat,m_vec3 v){
 	mat[14]= 0;
 	mat[15]= 1;
 }
+//--CALC--CALC--CALC--CALC--CALC--CALC--CALC--CALC--CALC--CALC--CALC--CALC--CALC--CALC--CALC--CALC--CALC--CALC
+//--CALC--CALC--CALC--CALC--CALC--CALC--CALC--CALC--CALC--CALC--CALC--CALC--CALC--CALC--CALC--CALC--CALC--CALC
+//--CALC--CALC--CALC--CALC--CALC--CALC--CALC--CALC--CALC--CALC--CALC--CALC--CALC--CALC--CALC--CALC--CALC--CALC
+void m_mat1_mult(m_mat1 mat,m_mat1 m1,m_mat1 m2){
+	mat[0]=m1[0]*m2[0];
+}
+void m_mat2_mult(m_mat2 mat,m_mat2 m1,m_mat2 m2){
+	mat[0]=m1[0]*m2[0] + m1[1]*m2[1];
+	mat[1]=m1[0]*m2[2] + m1[1]*m2[3];
+	mat[2]=m1[2]*m2[0] + m1[3]*m2[1];
+	mat[3]=m1[2]*m2[2] + m1[3]*m2[3];
+}
+void m_mat3_mult(m_mat3 mat,m_mat3 m1,m_mat3 m2){
+	mat[ 0]=m1[0]*m2[0] + m1[1]*m2[1] + m1[2]*m2[2];
+	mat[ 1]=m1[0]*m2[3] + m1[1]*m2[4] + m1[2]*m2[5];
+	mat[ 2]=m1[0]*m2[6] + m1[1]*m2[7] + m1[2]*m2[8];
+	mat[ 3]=m1[3]*m2[0] + m1[4]*m2[1] + m1[5]*m2[2];
+	mat[ 4]=m1[3]*m2[3] + m1[4]*m2[4] + m1[5]*m2[5];
+	mat[ 5]=m1[3]*m2[6] + m1[4]*m2[7] + m1[5]*m2[8];
+	mat[ 6]=m1[6]*m2[0] + m1[7]*m2[1] + m1[8]*m2[2];
+	mat[ 7]=m1[6]*m2[3] + m1[7]*m2[4] + m1[8]*m2[5];
+	mat[ 8]=m1[6]*m2[6] + m1[7]*m2[7] + m1[8]*m2[8];
+}
+void m_mat4_mult(m_mat4 mat,m_mat4 m1,m_mat4 m2){
+	mat[ 0]=m1[ 0]*m2[ 0] + m1[ 1]*m2[ 1] + m1[ 2]*m2[ 2] + m1[ 3]*m2[ 3];
+	mat[ 1]=m1[ 0]*m2[ 4] + m1[ 1]*m2[ 5] + m1[ 2]*m2[ 6] + m1[ 3]*m2[ 7];
+	mat[ 2]=m1[ 0]*m2[ 8] + m1[ 1]*m2[ 9] + m1[ 2]*m2[10] + m1[ 3]*m2[11];
+	mat[ 3]=m1[ 0]*m2[12] + m1[ 1]*m2[13] + m1[ 2]*m2[14] + m1[ 3]*m2[15];
+	mat[ 4]=m1[ 4]*m2[ 0] + m1[ 5]*m2[ 1] + m1[ 6]*m2[ 2] + m1[ 7]*m2[ 3];
+	mat[ 5]=m1[ 4]*m2[ 4] + m1[ 5]*m2[ 5] + m1[ 6]*m2[ 6] + m1[ 7]*m2[ 7];
+	mat[ 6]=m1[ 4]*m2[ 8] + m1[ 5]*m2[ 9] + m1[ 6]*m2[10] + m1[ 7]*m2[11];
+	mat[ 7]=m1[ 4]*m2[12] + m1[ 5]*m2[13] + m1[ 6]*m2[14] + m1[ 7]*m2[15];
+	mat[ 8]=m1[ 8]*m2[ 0] + m1[ 9]*m2[ 1] + m1[10]*m2[ 2] + m1[11]*m2[ 3];
+	mat[ 9]=m1[ 8]*m2[ 4] + m1[ 9]*m2[ 5] + m1[10]*m2[ 6] + m1[11]*m2[ 7];
+	mat[10]=m1[ 8]*m2[ 8] + m1[ 9]*m2[ 9] + m1[10]*m2[10] + m1[11]*m2[11];
+	mat[11]=m1[ 8]*m2[12] + m1[ 9]*m2[13] + m1[10]*m2[14] + m1[11]*m2[15];
+	mat[12]=m1[12]*m2[ 0] + m1[13]*m2[ 1] + m1[14]*m2[ 2] + m1[15]*m2[ 3];
+	mat[13]=m1[12]*m2[ 4] + m1[13]*m2[ 5] + m1[14]*m2[ 6] + m1[15]*m2[ 7];
+	mat[14]=m1[12]*m2[ 8] + m1[13]*m2[ 9] + m1[14]*m2[10] + m1[15]*m2[11];
+	mat[15]=m1[12]*m2[12] + m1[13]*m2[13] + m1[14]*m2[14] + m1[15]*m2[15];
+}
+
+// void m_mat1_add(m_mat1 mat,m_mat1 m1,m_mat1 m2);
+// void m_mat2_add(m_mat2 mat,m_mat2 m1,m_mat2 m2);
+// void m_mat3_add(m_mat3 mat,m_mat3 m1,m_mat3 m2);
+// void m_mat4_add(m_mat4 mat,m_mat4 m1,m_mat4 m2);
+
+// void m_mat1_sub(m_mat1 mat,m_mat1 m1,m_mat1 m2);
+// void m_mat2_sub(m_mat2 mat,m_mat2 m1,m_mat2 m2);
+// void m_mat3_sub(m_mat3 mat,m_mat3 m1,m_mat3 m2);
+// void m_mat4_sub(m_mat4 mat,m_mat4 m1,m_mat4 m2);
 //--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER
 //--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER
 //--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER
-void m_matLookAt(m_mat4 mat,m_vec4 eye,m_vec4 center,m_vec4 up){
+void m_matLookAt(m_mat4 mat,m_vec3 eye,m_vec3 center,m_vec3 up){
 
 }
-void m_matProjection(m_mat4 mat,float f,float near,float far){
-	mat[0] = 1;
-	mat[1] = 0;
-	mat[2] = 0;
-	mat[3] = 0;
+void m_matProjection(m_mat4 mat,float fovy,float aspect_ratio,float near,float far){
+	// mat[0] = 1;
+	// mat[1] = 0;
+	// mat[2] = 0;
+	// mat[3] = 0;
 
-	mat[4] = 0;
-	mat[5] = windows[0]->aspect_ratio;
-	mat[6] = 0;
-	mat[7] = 0;
+	// mat[4] = 0;
+	// mat[5] = windows[0]->aspect_ratio;
+	// mat[6] = 0;
+	// mat[7] = 0;
 
-	mat[8] = 0;
-	mat[9] = 0;
-	mat[10]= (far+near)/(near-far);
-	mat[11]= 2*far*near/(near-far);
+	// mat[8] = 0;
+	// mat[9] = 0;
+	// mat[10]= (far+near)/(near-far);
+	// mat[11]= 2*far*near/(near-far);
 
-	mat[12]= 0;
-	mat[13]= 0;
-	mat[14]= -1/f;
-	mat[15]= 0;
+	// mat[12]= 0;
+	// mat[13]= 0;
+	// mat[14]= -1/f;
+	// mat[15]= 0;
 }
