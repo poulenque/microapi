@@ -65,7 +65,7 @@ all:$(OBJECTS)
 	
 # To obtain object files
 build/%.o: src/%.c
-	$(CC) $(C_FLAGS) -c $< -o $@
+	mkdir -p build; $(CC) $(C_FLAGS) -c $< -o $@
 
 run:all
 	./$(PROG)

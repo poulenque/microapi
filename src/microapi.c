@@ -12,10 +12,12 @@
 // event handling
 // window resizing
 // m_close should delete glPrograms
+// resize event set aspect_ratio to the correct value
 
 struct m_window{
 	SDL_Window* sdl_window;
 	SDL_GLContext context;
+	float aspect_ratio;
 };
 
 //list all windows
@@ -38,7 +40,7 @@ void m_setPosition(m_window* window,int x, int y){
 	SDL_SetWindowPosition(window->sdl_window, x, y);
 }
 void m_setSize(m_window* window,int w, int h){
-
+	//TODO
 }
 
 void m_setMainLoopFunction(void(*f)(void)){
@@ -51,7 +53,7 @@ void m_setKeyStateFunction(void(*f)(const Uint8* keystate,int x,int y)){
 	keystate_function = f;
 }
 
-static bool quit = FALSE;
+static Bool quit = FALSE;
 
 void m_quitMainLoop(){
 	quit=TRUE;
@@ -93,7 +95,7 @@ void m_MainLoop(){
 }
 
 
-bool m_init(int gl_major_version,int gl_minor_version){
+Bool m_init(int gl_major_version,int gl_minor_version){
 	if( SDL_Init( SDL_INIT_VIDEO ) < 0 ) {
 		printf( "SDL could not initialize! SDL Error: %s\n", SDL_GetError() );
 		return FALSE;
@@ -116,7 +118,8 @@ void m_close(){
 }
 
 
-m_window* m_newWindow(int width,int height,const char* title,bool resizable){
+m_window* m_newWindow(int width,int height,const char* title,Bool resizable){
+	aspect_ratio=((float)width)/height;
 
 	if(window_count){
 		printf("=======================================================\n");
@@ -169,7 +172,7 @@ m_window* m_newWindow(int width,int height,const char* title,bool resizable){
 	return window;
 }
 
-bool m_loadShader(GLuint* shaderId,GLuint shaderType,const char* path){
+Bool m_loadShader(GLuint* shaderId,GLuint shaderType,const char* path){
 	//TODO : aller chercher la string qui correspond au code
 	// const GLchar * vertexShaderSource[]={path};
 	const GLchar * vertexShaderSource[]={readFile(path)};
@@ -195,7 +198,7 @@ bool m_loadShader(GLuint* shaderId,GLuint shaderType,const char* path){
 	return TRUE;
 }
 
-bool m_generateGLProgram(GLuint* programId,GLuint vertexShaderId,GLuint geometryShaderId,GLuint fragmentShaderId){
+Bool m_generateGLProgram(GLuint* programId,GLuint vertexShaderId,GLuint geometryShaderId,GLuint fragmentShaderId){
 	*programId = glCreateProgram();
 	glAttachShader( *programId, vertexShaderId );
 	glAttachShader( *programId, geometryShaderId );
@@ -275,3 +278,309 @@ static char* readFile(const char *path) {
 	return file_txt;
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Bool m_mat1_inverse(m_mat1 mat_in,m_mat1 mat_out){
+	mat_out[0]=1./mat_in[0];
+}
+Bool m_mat2_inverse(m_mat2 mat_in,m_mat2 mat_out){
+	float det_invert=1./(mat_in[0]*mat_in[3]-mat_in[1]*mat_in[2]) 
+	mat_out[0] =  det_invert*mat_in[3];
+	mat_out[1] = -det_invert*mat_in[1];
+	
+	mat_out[2] = -det_invert*mat_in[2];
+	mat_out[3] =  det_invert*mat_in[0];
+}
+Bool m_mat3_inverse(m_mat3 mat_in,m_mat3 mat_out){
+#define a__ mat_in[0]
+#define b__ mat_in[1]
+#define c__ mat_in[2]
+#define d__ mat_in[3]
+#define e__ mat_in[4]
+#define f__ mat_in[5]
+#define g__ mat_in[6]
+#define h__ mat_in[7]
+#define i__ mat_in[8]
+#define A= e__*i__ - f__*h__;
+#define B= f__*g__ - d__*i__;
+#define C= d__*h__ - e__-g__;
+#define D= c__*h__ - b__*i__;
+#define E= a__*i__ - c__*g__;
+#define F= b__*g__ - a__*h__;
+#define G= b__*f__ - c__*e__;
+#define H= c__*d__ - a__*f__;
+#define I= a__*e__ - b__*d__;
+	float det_invert =
+		 mat_in[0]*(mat_in[4]*mat_in[8]-mat_in[5]*mat_in[7])
+		-mat_in[1]*(mat_in[8]*mat_in[3]-mat_in[5]*mat_in[6])
+		+mat_in[2]*(mat_in[3]*mat_in[7]-mat_in[4]*mat_in[6]);
+	det_invert=1./det_invert;
+
+
+	mat_out[0] = A;
+	mat_out[1] = D;
+	mat_out[2] = G;
+
+	mat_out[3] = B;
+	mat_out[4] = E;
+	mat_out[5] = H;
+	
+	mat_out[6] = C;
+	mat_out[7] = F;
+	mat_out[8] = I;
+#undef a__
+#undef b__
+#undef c__
+#undef d__
+#undef e__
+#undef f__
+#undef g__
+#undef h__
+#undef i__
+#undef A
+#undef B
+#undef C
+#undef D
+#undef E
+#undef F
+#undef G
+#undef H
+#undef I
+}
+Bool m_mat4_inverse(m_mat4 mat_in,m_mat4 mat_out){
+#define a__ mat_in[0]
+#define b__ mat_in[1]
+#define c__ mat_in[2]
+#define d__ mat_in[3]
+#define e__ mat_in[4]
+#define f__ mat_in[5]
+#define g__ mat_in[6]
+#define h__ mat_in[7]
+#define i__ mat_in[8]
+#define j__ mat_in[9]
+#define k__ mat_in[10]
+#define l__ mat_in[11]
+#define m__ mat_in[12]
+#define n__ mat_in[13]
+#define o__ mat_in[14]
+#define p__ mat_in[15]
+	float det_invert=9000000000000;
+
+	mat_out[0] = det_invert*;
+	mat_out[1] = det_invert*;
+	mat_out[2] = det_invert*;
+	mat_out[3] = det_invert*;
+
+	mat_out[4] = det_invert*;
+	mat_out[5] = det_invert*;
+	mat_out[6] = det_invert*;
+	mat_out[7] = det_invert*;
+
+	mat_out[8] = det_invert*;
+	mat_out[9] = det_invert*;
+	mat_out[10]= det_invert*;
+	mat_out[11]= det_invert*;
+
+	mat_out[12]= det_invert*;
+	mat_out[13]= det_invert*;
+	mat_out[14]= det_invert*;
+	mat_out[15]= det_invert*;
+#undef a__
+#undef b__
+#undef c__
+#undef d__
+#undef e__
+#undef f__
+#undef g__
+#undef h__
+#undef i__
+#undef j__
+#undef k__
+#undef l__
+#undef m__
+#undef n__
+#undef o__
+#undef p__
+}
+
+void m_matLookAt(m_mat4 mat,m_vec4 eye,m_vec4 center,m_vec4 up){
+
+}
+void m_matProjection(m_mat4 mat,float f,float near,float far){
+	mat[0] = 1;
+	mat[1] = 0;
+	mat[2] = 0;
+	mat[3] = 0;
+
+	mat[4] = 0;
+	mat[5] = windows[0]->aspect_ratio;
+	mat[6] = 0;
+	mat[7] = 0;
+
+	mat[8] = 0;
+	mat[9] = 0;
+	mat[10]= (far+near)/(near-far);
+	mat[11]= 2*far*near/(near-far);
+
+	mat[12]= 0;
+	mat[13]= 0;
+	mat[14]= -1/f;
+	mat[15]= 0;
+}
+
+//--TRANSLATE--TRANSLATE--TRANSLATE--TRANSLATE--TRANSLATE
+void m_mat2_translation(m_mat2 mat,m_vec1 v){
+	mat[0] = 0;
+	mat[1] = v[0];
+	mat[2] = 0;
+	mat[3] = 1;
+}
+void m_mat3_translation(m_mat3 mat,m_vec2 v){
+	mat[0] = 0;
+	mat[1] = 0;
+	mat[2] = v[0];
+
+	mat[3] = 0;
+	mat[4] = 0;
+	mat[5] = v[1];
+
+	mat[6] = 0;
+	mat[7] = 0;
+	mat[8] = 1;
+}
+void m_mat4_translation(m_mat4 mat,m_vec3 v){
+	mat[0] = 0;
+	mat[1] = 0;
+	mat[2] = 0;
+	mat[3] = v[0];
+
+	mat[4] = 0;
+	mat[5] = 0;
+	mat[6] = 0;
+	mat[7] = v[1];
+
+	mat[8] = 0;
+	mat[9] = 0;
+	mat[10]= 0;
+	mat[11]= v[2];
+
+	mat[12]= 0;
+	mat[13]= 0;
+	mat[14]= 0;
+	mat[15]= 1;
+}
+//--ROTATE--ROTATE--ROTATE--ROTATE--ROTATE--ROTATE
+// void m_mat2_rotation(m_mat2 mat,m_vec1 v){
+// 	float theta = sqrt(v[0]*v[0]);
+// 	theta=theta>=0?1:-1;
+// 	mat[0] = theta;
+// 	mat[1] = 0;
+// 	mat[2] = 1;
+// 	mat[3] = 0;
+// }
+void m_mat3_rotation(m_mat3 mat,float theta){
+	// float theta = sqrt(v[0]*v[0]+v[1]*v[1]);
+	float c=cos(theta);
+	float s=sin(theta);
+
+	mat[0] = c;
+	mat[1] = -s;
+	mat[2] = 0;
+
+	mat[3] = s;
+	mat[4] = c;
+	mat[5] = 0;
+
+	mat[6] = 0;
+	mat[7] = 0;
+	mat[8] = 1;
+}
+void m_mat4_rotation(m_mat4 mat,m_vec3 v){
+	float theta = sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
+	float c=cos(theta);
+	float s=sin(theta);
+	float inv_theta=1./theta;
+	float x=v[0]*inv_theta;
+	float y=v[1]*inv_theta;
+	float z=v[2]*inv_theta;
+
+	mat[0] = 0;
+	mat[1] = 0;
+	mat[2] = 0;
+	mat[3] = 0;
+
+	mat[4] = 0;
+	mat[5] = 0;
+	mat[6] = 0;
+	mat[7] = 0;
+
+	mat[8] = 0;
+	mat[9] = 0;
+	mat[10]= 0;
+	mat[11]= 0;
+
+	mat[12]= 0;
+	mat[13]= 0;
+	mat[14]= 0;
+	mat[15]= 0;
+}
+//--SCALE--SCALE--SCALE--SCALE--SCALE--SCALE
+void m_mat2_scale(m_mat2 mat,m_vec1 v){
+	mat[0] = v[0];
+	mat[1] = 0;
+	mat[2] = 0;
+	mat[3] = 0;
+}
+void m_mat3_scale(m_mat3 mat,m_vec2 v){
+	mat[0] = v[0];
+	mat[1] = 0;
+	mat[2] = 0;
+
+	mat[3] = 0;
+	mat[4] = v[1];
+	mat[5] = 0;
+
+	mat[6] = 0;
+	mat[7] = 0;
+	mat[8] = 1;
+}
+void m_mat4_scale(m_mat4 mat,m_vec3 v){
+	mat[0] = v[0];
+	mat[1] = 0;
+	mat[2] = 0;
+	mat[3] = 0;
+
+	mat[4] = 0;
+	mat[5] = v[1];
+	mat[6] = 0;
+	mat[7] = 0;
+
+	mat[8] = 0;
+	mat[9] = 0;
+	mat[10]= v[2];
+	mat[11]= 0;
+
+	mat[12]= 0;
+	mat[13]= 0;
+	mat[14]= 0;
+	mat[15]= 1;
+}
