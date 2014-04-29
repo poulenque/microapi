@@ -417,8 +417,6 @@ Bool m_mat4_inverse(m_mat4 mat_in,m_mat4 mat_out){
 #undef N
 #undef O
 #undef P
-
-
 //--TRANSLATE--TRANSLATE--TRANSLATE--TRANSLATE--TRANSLATE
 //--TRANSLATE--TRANSLATE--TRANSLATE--TRANSLATE--TRANSLATE
 //--TRANSLATE--TRANSLATE--TRANSLATE--TRANSLATE--TRANSLATE
@@ -595,16 +593,6 @@ void m_mat4_mult(m_mat4 mat,m_mat4 m1,m_mat4 m2){
 	mat[14]=m1[12]*m2[ 8] + m1[13]*m2[ 9] + m1[14]*m2[10] + m1[15]*m2[11];
 	mat[15]=m1[12]*m2[12] + m1[13]*m2[13] + m1[14]*m2[14] + m1[15]*m2[15];
 }
-
-// void m_mat1_add(m_mat1 mat,m_mat1 m1,m_mat1 m2);
-// void m_mat2_add(m_mat2 mat,m_mat2 m1,m_mat2 m2);
-// void m_mat3_add(m_mat3 mat,m_mat3 m1,m_mat3 m2);
-// void m_mat4_add(m_mat4 mat,m_mat4 m1,m_mat4 m2);
-
-// void m_mat1_sub(m_mat1 mat,m_mat1 m1,m_mat1 m2);
-// void m_mat2_sub(m_mat2 mat,m_mat2 m1,m_mat2 m2);
-// void m_mat3_sub(m_mat3 mat,m_mat3 m1,m_mat3 m2);
-// void m_mat4_sub(m_mat4 mat,m_mat4 m1,m_mat4 m2);
 //--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER
 //--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER
 //--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER--OTHER

@@ -21,10 +21,10 @@ Bool initGL() {
 	if(!m_generateGLProgram(&gProgramID,vertexShader,0,fragmentShader))return FALSE;
 	//==================================================
 	//==================================================
-	m_mat4 projection_matrix;
-	m_matProjection(projection_matrix ,90. ,gWindow->aspect_ratio ,0.01 ,100.);
+	m_mat4 projection_matrix={1,0,0,0  ,0,1,0,0  ,0,0,1,0  ,0,0,0,1};
+	// m_matProjection(projection_matrix ,90. ,gWindow->aspect_ratio ,0.01 ,100.);
 	projection_id = glGetUniformLocation(gProgramID, "projection");
-    glUniformMatrix4fv(projection_id, 1, GL_FALSE, projection_matrix);
+    glUniformMatrix4fv(projection_id, 1, GL_TRUE, projection_matrix);
 
 	gVertexPosLocation = glGetAttribLocation( gProgramID, "position" );
 	glClearColor( 0.f, 0.f, 0.f, 1.f );
